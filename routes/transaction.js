@@ -47,7 +47,7 @@ router.delete('/:transactionId', async function (req, res, next) {
             const client = await Mongo.MongoClient.connect(process.env.MONGO_STRING);
             const db = client.db(process.env.MONGO_DB);
             const updatedAt = new Date();
-            await db.collection('transactions').updateOne({document, _id:Mongo.ObjectId(transactionId)}, {
+            await db.collection('transactions').updateOne({document, _id: Mongo.ObjectId(transactionId)}, {
                 $set: {status: TransactionStatus.CANCELLED, updatedAt: updatedAt.toISOString()}
             })
             res.status(200).send({});
@@ -67,10 +67,13 @@ router.get('/:transactionId', async function (req, res, next) {
         if (!!document) {
             const client = await Mongo.MongoClient.connect(process.env.MONGO_STRING);
             const db = client.db(process.env.MONGO_DB);
-            let transaction = await db.collection('transactions').findOne({document, _id:Mongo.ObjectId(transactionId)});
-            if(transaction){
+            let transaction = await db.collection('transactions').findOne({
+                document,
+                _id: Mongo.ObjectId(transactionId)
+            });
+            if (transaction) {
                 res.status(200).send(transaction);
-            }else {
+            } else {
                 throw new Error('Transação não encontrada');
             }
         } else {
@@ -83,36 +86,54 @@ router.get('/:transactionId', async function (req, res, next) {
 });
 
 router.post('/:transactionId/authorize', async function (req, res, next) {
-    try{
+    try {
         const {transactionId} = req.params;
         const {document, deviceInfo, deviceKey, otp} = req.body;
 
         const client = await Mongo.MongoClient.connect(process.env.MONGO_STRING);
         const db = client.db(process.env.MONGO_DB);
-        const transaction = await db.collection('transactions').findOne({_id:Mongo.ObjectId(transactionId), document});
-        if(!!transaction && transaction.status === TransactionStatus.PENDING){
+        const transaction = await db.collection('transactions').findOne({_id: Mongo.ObjectId(transactionId), document});
+        if (!!transaction && transaction.status === TransactionStatus.PENDING) {
             const terminal = await db.collection('terminals').findOne({document: transaction.document});
-            if(!!terminal) {
+            if (!!terminal) {
                 const terminalToken = CryptoJS.HmacSHA512(terminal.type + terminal.UUID + terminal.deviceID, process.env.SERVER_SALT);
-                const deviceToken = CryptoJS.HmacSHA512(terminalToken.toString()+terminal.document+terminal.linkedAt, process.env.SERVER_SALT);
-                if(deviceInfo.deviceID === terminal.deviceID && deviceInfo.UUID === terminal.UUID && deviceInfo.type === terminal.type && deviceToken.toString() === deviceKey) {
-                    if(otp === calculateOTP(deviceToken)){
-                        //TODO aprovar transação
-                        //TODO se tiver url de notificação envia-lá
+                const deviceToken = CryptoJS.HmacSHA512(terminalToken.toString() + terminal.document + terminal.linkedAt, process.env.SERVER_SALT);
+                if (deviceInfo.deviceID === terminal.deviceID && deviceInfo.UUID === terminal.UUID && deviceInfo.type === terminal.type && deviceToken.toString() === deviceKey) {
+                    if (otp === calculateOTP(deviceToken)) {
+                        const updatedAt = new Date();
+                        await db.collection('transactions').updateOne({_id: Mongo.ObjectId(transactionId)}, {
+                            $set: {
+                                status: TransactionStatus.APPROVED,
+                                updatedAt: updatedAt.toISOString()
+                            }
+                        })
+                        if (!!transaction.notificationURL) {
+                            axios.post(transaction.notificationURL, {
+                                ...transaction,
+                                status: TransactionStatus.APPROVED,
+                                updatedAt: updatedAt.toISOString()
+                            });
+                        }
                         //TODO publicar no socket a aprovação
-                    }else {
-                        throw new Error(`OTP inválido, tentativas restantes: ${transaction.attempts-1}`);
+                    } else {
+                        if(transaction.attempts <= 1) {
+                            //Block token?
+                            db.collection('transactions').updateOne({_id: Mongo.ObjectId(transactionId)}, {$set:{status: TransactionStatus.FAILED}})
+                        } else {
+                            db.collection('transactions').updateOne({_id: Mongo.ObjectId(transactionId)}, {$set:{attempts: transaction.attempts - 1}})
+                        }
+                        throw new Error(`OTP inválido, tentativas restantes: ${transaction.attempts - 1}`);
                     }
-                }else {
+                } else {
                     throw new Error('Terminal inválido');
                 }
-            }else {
+            } else {
                 throw new Error('Terminal não encontrado');
             }
-        }else {
+        } else {
             throw new Error('Transação não encontrada');
         }
-    }catch (e) {
+    } catch (e) {
         console.log(e);
         res.status(400).send('Bad Request')
     }

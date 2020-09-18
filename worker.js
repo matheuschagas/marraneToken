@@ -4,29 +4,48 @@ if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
 }
 
+const amqp = require('amqplib/callback_api');
+
 const worker = async () => {
     try {
-        console.log(process.env.MONGO_STRING)
         let client = await Mongo.MongoClient.connect(process.env.MONGO_STRING);
         let db = client.db(process.env.MONGO_DB);
-        while (true) {
             try {
-                const transactions = await db.collection('transactions').find({status: TransactionStatus.PENDING}).limit(1).toArray();
-                if (transactions.length > 0) {
-                    const transaction = transactions[0];
-                    let createdAt = new Date(transaction.createdAt);
-                    let now = new Date();
-                    if (now.getTime() - createdAt.getTime() >= transaction.lifetime) {
-                        console.info(`transaction ${transaction._id} expired.`);
-                        await db.collection('transactions').updateOne({_id: Mongo.ObjectId(transaction._id)}, {$set: {status: TransactionStatus.EXPIRED, updatedAt: now.toISOString()}});
+                amqp.connect(process.env.RABBITMQ_SERVER, function (error0, connection) {
+                    if (error0) {
+                        throw error0;
                     }
-                }
+                    connection.createChannel(function (error1, channel) {
+                        if (error1) {
+                            throw error1;
+                        }
+                        const queue = 'marranetoken';
+                        channel.consume(queue, async function(msg) {
+                            const secs = msg.content.toString().split('.').length - 1;
+                            let now = new Date();
+                            console.log(" [x] Received %s", msg.content.toString());
+                            await db.collection('transactions').updateOne({_id: Mongo.ObjectId(msg.content.toString())}, {
+                                $set: {
+                                    status: TransactionStatus.EXPIRED,
+                                    updatedAt: now.toISOString()
+                                }
+                            });
+                            setTimeout(function() {
+                                console.log(" [x] Done");
+                            }, secs * 1000);
+                        }, {
+                            // automatic acknowledgment mode,
+                            // see https://www.rabbitmq.com/confirms.html for details
+                            noAck: true
+                        });
+                    });
+                });
+
             } catch (e) {
                 console.log(e);
                 client = await Mongo.MongoClient.connect(process.env.MONGO_STRING);
                 db = client.db(process.env.MONGO_DB);
             }
-        }
     } catch (e) {
         console.log(e);
     }

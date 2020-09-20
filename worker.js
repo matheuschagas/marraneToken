@@ -4,6 +4,16 @@ if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
 }
 
+const io = require('socket.io-client');
+
+const socket = io(`${process.env.SOCKET_URL}`);
+
+socket.on('connect', () => {
+    socket.on('message', (message)=>{
+        console.log(message);
+    })
+});
+
 const amqp = require('amqplib/callback_api');
 
 const worker = async () => {
@@ -30,6 +40,7 @@ const worker = async () => {
                                     updatedAt: now.toISOString()
                                 }
                             });
+                            socket.send({type: 'transaction', id: msg.content.toString(), status: TransactionStatus.EXPIRED})
                             setTimeout(function() {
                                 console.log(" [x] Done");
                             }, secs * 1000);

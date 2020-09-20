@@ -14,10 +14,11 @@ const calculateOTP = (deviceToken) => {
     return HOTP.totp(deviceToken, {digits: 6, time: Date.now() / 1000, timeStep: 24})
 }
 
+
 router.post('/', async function (req, res, next) {
     try {
+        const socket = req.app.locals.socket;
         const {type, partner, identifier, notificationURL, lifetime, document, attempts} = req.body;
-
         if (!!type && !!partner && !!identifier && !!document) {
             let terminal = await Terminal.findOne({document});
             if(!!terminal) {
@@ -31,6 +32,7 @@ router.post('/', async function (req, res, next) {
                     attempts
                 });
                 await transaction.save();
+                socket.send({type: 'transaction', id: transaction._id, status: TransactionStatus.PENDING});
                 res.status(200).send({transactionId: transaction._id});
             }else {
                 throw new Error(TransactionErrors.TERMINAL_NOT_FOUND);

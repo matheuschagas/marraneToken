@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const CryptoJS = require('crypto-js');
-const Mongo = require('mongodb')
+const Terminal = require('../models/Terminal');
+
 
 
 router.post('/terminal', async function (req, res, next) {
@@ -9,11 +10,10 @@ router.post('/terminal', async function (req, res, next) {
         const {type, UUID, deviceID} = req.body.deviceInfo;
         if (!!type && !!UUID && !!deviceID) {
             //region Save Terminal
-            const client = await Mongo.MongoClient.connect(process.env.MONGO_STRING);
-            const db = client.db(process.env.MONGO_DB);
-            let result = await db.collection('terminals').findOne({UUID});
+            let result = await Terminal.findOne({UUID});
             if (!!!result) {
-                await db.collection('terminals').insertOne({type, UUID, deviceID, createdAt: (new Date()).toISOString()})
+                let terminal = new Terminal({type, UUID, deviceID});
+                await terminal.save();
             } else {
                 throw new Error('Terminal já cadastrado');
             }

@@ -17,6 +17,7 @@
     "express": "~4.16.1",
     "hotp": "^3.0.0",
     "mongodb": "^3.6.2",
+    "mongoose": "^5.10.6",
     "morgan": "~1.9.1",
     "socket.io": "^2.3.0"
   },

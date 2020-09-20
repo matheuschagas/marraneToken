@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const CryptoJS = require('crypto-js');
-const Mongo = require('mongodb');
+const Terminal = require('../models/Terminal');
 
 /* GET home page. */
 router.post('/link', async function(req, res, next) {
@@ -11,14 +11,14 @@ router.post('/link', async function(req, res, next) {
             const terminalToken = CryptoJS.HmacSHA512(deviceInfo.type+deviceInfo.UUID+deviceInfo.deviceID, process.env.SERVER_SALT);
             if(terminalToken.toString() === terminalKey) {
                 //region Save Terminal
-                const client = await Mongo.MongoClient.connect(process.env.MONGO_STRING);
-                const db = client.db(process.env.MONGO_DB);
                 const linkedAt = new Date();
-                let terminal = await db.collection('terminals').findOne({UUID:deviceInfo.UUID});
+                let terminal = await Terminal.findOne({UUID:deviceInfo.UUID});
                 if(!!terminal && !!terminal.document) {
                     throw new Error('Device já vinculado');
                 } else if(!!terminal) {
-                    await db.collection('terminals').updateOne({_id:terminal._id}, {$set:{document, updatedAt: linkedAt.toISOString(), linkedAt: linkedAt.toISOString()}});
+                    terminal.document = document;
+                    terminal.linkedAt = linkedAt;
+                    await terminal.save();
                 }else {
                     throw new Error('Device Inexistente');
                 }

@@ -42,6 +42,7 @@ const worker = async () => {
                 });
 
             } catch (e) {
+                //TODO avisar telegram
                 console.log(e);
                 client = await Mongo.MongoClient.connect(process.env.MONGO_STRING);
                 db = client.db(process.env.MONGO_DB);

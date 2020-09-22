@@ -11,7 +11,7 @@ const Transaction = require('../models/Transaction');
 const Terminal = require('../models/Terminal');
 
 const calculateOTP = (deviceToken) => {
-    return HOTP.totp(deviceToken, {digits: 6, time: Date.now() / 1000, timeStep: 24})
+    return HOTP.totp(deviceToken, {digits: 6, time: Date.now() / 1000, timeStep: 30})
 }
 
 
@@ -105,35 +105,39 @@ router.get('/:transactionId', async function (req, res, next) {
     }
 });
 
-router.post('/:transactionId/authorize', async function (req, res, next) {
+const changeStatus = async (status, req, res, next) => {
     try {
         const {transactionId} = req.params;
         const {document, deviceInfo, deviceKey, otp} = req.body;
+        const socket = req.app.locals.socket;
 
         const transaction = await Transaction.findOne({_id: transactionId, document});
         if (!!transaction && transaction.status === TransactionStatus.PENDING) {
             const terminal = await Terminal.findOne({document: transaction.document});
             if (!!terminal) {
                 const terminalToken = CryptoJS.HmacSHA512(terminal.type + terminal.UUID + terminal.deviceID, process.env.SERVER_SALT);
-                const deviceToken = CryptoJS.HmacSHA512(terminalToken.toString() + terminal.document + terminal.linkedAt, process.env.SERVER_SALT);
+                const deviceToken = CryptoJS.HmacSHA512(terminalToken.toString() + terminal.document + (new Date(terminal.linkedAt).toISOString()), process.env.SERVER_SALT);
                 if (deviceInfo.deviceID === terminal.deviceID && deviceInfo.UUID === terminal.UUID && deviceInfo.type === terminal.type && deviceToken.toString() === deviceKey) {
-                    if (otp === calculateOTP(deviceToken)) {
-                        const updatedAt = new Date();
-                        transaction.status = TransactionStatus.APPROVED;
+
+                    if (otp === calculateOTP(deviceToken.toString())) {
+                        transaction.status = status;
                         await transaction.save();
                         if (!!transaction.notificationURL) {
                             axios.post(transaction.notificationURL, {
                                 ...transaction
                             });
                         }
-                        //TODO publicar no socket a aprovação
+                        socket.send({type: 'transaction', id: transaction._id, status});
+                        res.status(200).json({success: true});
                     } else {
                         if (transaction.attempts <= 1) {
                             if (Boolean(process.env.BLOCK_TOKEN_AFTER_FAIL_TRANSACTION)) {
                                 Telegram.sendMessage(`Usuário ${document} está com token bloqueado`, process.env.TELEGRAM_CHANNEL);
+                                //TODO block token
                             }
                             transaction.status =  TransactionStatus.FAILED;
                             await transaction.save();
+                            socket.send({type: 'transaction', id: transaction._id, status: TransactionStatus.FAILED});
                         } else {
                             transaction.attempts = transaction.attempts - 1;
                             await transaction.save();
@@ -152,6 +156,7 @@ router.post('/:transactionId/authorize', async function (req, res, next) {
             throw new Error(TransactionErrors.TRANSACTION_NOT_FOUND_OR_EXPIRED);
         }
     } catch (e) {
+        console.log(e);
         switch (e.message) {
             case TransactionErrors.INVALID_OTP:
                 res.status(401).send({error: e.message});
@@ -170,10 +175,14 @@ router.post('/:transactionId/authorize', async function (req, res, next) {
                 break;
         }
     }
+}
+
+router.post('/:transactionId/authorize', async function (req, res, next) {
+    await changeStatus(TransactionStatus.APPROVED, req, res, next);
 });
 
 router.post('/:transactionId/deny', async function (req, res, next) {
-
+    await changeStatus(TransactionStatus.DENIED, req, res, next);
 });
 
 module.exports = router;

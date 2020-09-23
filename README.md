@@ -26,9 +26,9 @@ Cria de um terminal de token
 
 | Parametros | Descrição | Informação do Client |
 |---|---|---|
-|type|Os tipos são: WEB, MOBILE|[x]|
-|UUID|Chave única do device|[x]|
-|deviceID|MOBILE usa deviceID e WEB usa user-agent|[x]|
+|type|Os tipos são: WEB, MOBILE|:white_check_mark:|
+|UUID|Chave única do device|:white_check_mark:|
+|deviceID|MOBILE usa deviceID e WEB usa user-agent|:white_check_mark:|
 #### `POST /device/link`
 Vincula um device a um terminal
 #### `POST /device/unlink`

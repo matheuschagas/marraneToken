@@ -4,6 +4,14 @@ Serviço de token para o banco topázio feito em Node as seguintes bibliotecas:
 * Socket.io
 * RabbitMQ
 
+No caso de suspeita de fraude e bloqueio de token um aviso é emitido num grupo do Telegram
+
+#### Variáveis de ambiente
+
+| Nome | Descrição |
+|---|---|
+| | | 
+
 ## Integração
 Construa um Microsserviço que se comunique com a API de token, pois o serviço de token não deverá ser exposto.
 
@@ -49,10 +57,10 @@ Cria uma nova Transação e retorna um `transactionId`
 type|Tipo da transação| |:white_check_mark:
 partner|Código do parceiro| | :white_check_mark:
 identifier|Identificador da transação| | :white_check_mark:
-notificationURL|URL de callback| | |
-lifetime|Tempo de vida da transação| |:white_check_mark:|
+notificationURL|URL de callback que é acionada quando o estado da transação mudar| | |
+lifetime|Tempo de vida da transação em ms| ||
 document|Documento do usuário (CPF), o client enviará o JWT na requisição| |:white_check_mark:
-attempts|Numero máximo de tentativas de token| | :white_check_mark: |
+attempts|Numero máximo de tentativas de token| | |
 
 #### `DELETE /transaction/:transactionId`
 Cancela uma transação

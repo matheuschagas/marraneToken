@@ -4,6 +4,9 @@ Serviço de token para o banco topázio feito em Node as seguintes bibliotecas:
 * Socket.io
 * RabbitMQ
 
+Nele está contido uma API (`yarn start`), um Balancer(`yarn balancer`) para controlar as instancias de Workers(`yarn worker`) que expiram as transações e um Socket(`yarn socket`) onde são emitidos as alterações das transações
+Para o pleno funcionamento a máquina/docker que rodar o serviço deve possuir um Banco Mongo com as collections `terminals` e `transactions`. Deverá também possuir um serviço do RabitMQ rodando.
+
 No caso de suspeita de fraude e bloqueio de token um aviso é emitido num grupo do Telegram
 
 #### Variáveis de ambiente

@@ -59,7 +59,7 @@ router.delete('/:transactionId', async function (req, res, next) {
 
         if (!!document) {
             await Transaction.findOneAndDelete({document, _id: transactionId});
-            res.status(200).send({});
+            res.status(200).send({success: true});
         } else {
             throw new Error(TransactionErrors.INVALID_REQUEST);
         }
@@ -133,11 +133,14 @@ const changeStatus = async (status, req, res, next) => {
                         if (transaction.attempts <= 1) {
                             if (Boolean(process.env.BLOCK_TOKEN_AFTER_FAIL_TRANSACTION)) {
                                 Telegram.sendMessage(`Usuário ${document} está com token bloqueado`, process.env.TELEGRAM_CHANNEL);
-                                //TODO block token
+                                delete terminal.document;
+                                delete terminal.linkedAt;
+                                await terminal.save();
                             }
                             transaction.status =  TransactionStatus.FAILED;
                             await transaction.save();
                             socket.send({type: 'transaction', id: transaction._id, status: TransactionStatus.FAILED});
+                            throw new Error(TransactionErrors.INVALID_TERMINAL);
                         } else {
                             transaction.attempts = transaction.attempts - 1;
                             await transaction.save();

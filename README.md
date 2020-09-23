@@ -22,25 +22,77 @@ Rotas disponíveis
 
 
 #### `POST /terminal`
-Cria de um terminal de token
+Cria de um terminal de token e retorna uma chave do terminal (`terminalToken`) que deve ser encaminhado ao client
 
-| Parametros | Descrição | Informação do Client |
-|---|---|---|
-|type|Os tipos são: WEB, MOBILE|:white_check_mark:|
-|UUID|Chave única do device|:white_check_mark:|
-|deviceID|MOBILE usa deviceID e WEB usa user-agent|:white_check_mark:|
+| Parametros | Descrição | Informação do Client | Obrigatório |
+|---|---|---|---|
+|type|Os tipos são: WEB, MOBILE|:white_check_mark:|:white_check_mark:
+|UUID|Chave única do device|:white_check_mark:|:white_check_mark:
+|deviceID|MOBILE usa deviceID e WEB usa user-agent|:white_check_mark:|:white_check_mark:
 #### `POST /device/link`
-Vincula um device a um terminal
-#### `POST /device/unlink`
+Vincula um device a um terminal e retorna uma chave do device (`deviceToken`) que deve ser encaminhado ao client
+
+| Parametros | Descrição | Informação do Client | Obrigatório |
+|---|---|---|---|
+|type|Os tipos são: WEB, MOBILE|:white_check_mark:|:white_check_mark:
+|UUID|Chave única do device|:white_check_mark:|:white_check_mark:
+|deviceID|MOBILE usa deviceID e WEB usa user-agent|:white_check_mark:|:white_check_mark:
+|document|Documento do usuário (CPF), o client enviará o JWT na requisição| |:white_check_mark:
+#### TODO `POST /device/unlink`
 Desvincula um device de um terminal
+
+| Parametros | Descrição | Informação do Client | Obrigatório |
+|---|---|---|---|
+|type|Os tipos são: WEB, MOBILE|:white_check_mark:|:white_check_mark:
+|UUID|Chave única do device|:white_check_mark:|:white_check_mark:
+|deviceID|MOBILE usa deviceID e WEB usa user-agent|:white_check_mark:|:white_check_mark:
+|document|Documento do usuário (CPF), o client enviará o JWT na requisição| |:white_check_mark:
+
 #### `POST /transaction`
-Cria uma nova Transação
+Cria uma nova Transação e retorna um `transactionId`
+
+| Parametros | Descrição | Informação do Client | Obrigatório |
+|---|---|---|---|
+type|Tipo da transação| |:white_check_mark:
+partner|Código do parceiro| | :white_check_mark:
+identifier|Identificador da transação| | :white_check_mark:
+notificationURL|URL de callback| | |
+lifetime|Tempo de vida da transação| |:white_check_mark:|
+document|Documento do usuário (CPF), o client enviará o JWT na requisição| |:white_check_mark:
+attempts|Numero máximo de tentativas de token| | :white_check_mark: |
+
 #### `DELETE /transaction/:transactionId`
 Cancela uma transação
+
+| Parametros | Descrição | Informação do Client | Obrigatório |
+|---|---|---|---|
+document|Documento do usuário (CPF), o client enviará o JWT na requisição| |:white_check_mark:
+
 #### `GET /transaction/:transactionId`
-Retorna o estado de uma transação
+Retorna o estado de uma transação, os parametros são passados no HEADER
+
+| Parametros | Descrição | Informação do Client | Obrigatório |
+|---|---|---|---|
+document|Documento do usuário (CPF), o client enviará o JWT na requisição| |:white_check_mark:
+
+
 #### `POST /transaction/:transactionId/authorize`
 Autoriza uma transação
+
+| Parametros | Descrição | Informação do Client | Obrigatório |
+|---|---|---|---|
+|deviceInfo|são dados usados para criação do terminal|:white_check_mark:|:white_check_mark:
+|deviceKey|Chave criada no vínculo do device|:white_check_mark:|:white_check_mark:
+|otp|OTP criado no device|:white_check_mark:|:white_check_mark:
+|document|Documento do usuário (CPF), o client enviará o JWT na requisição| |:white_check_mark:
+
 #### `POST /transaction/:transactionId/deny`
 Recusa uma transação
+
+| Parametros | Descrição | Informação do Client | Obrigatório |
+|---|---|---|---|
+|deviceInfo|são dados usados para criação do terminal|:white_check_mark:|:white_check_mark:
+|deviceKey|Chave criada no vínculo do device|:white_check_mark:|:white_check_mark:
+|otp|OTP criado no device|:white_check_mark:|:white_check_mark:
+|document|Documento do usuário (CPF), o client enviará o JWT na requisição| |:white_check_mark:
 

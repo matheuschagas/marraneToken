@@ -41,13 +41,6 @@ Vincula um device a um terminal e retorna uma chave do device (`deviceToken`) qu
 #### TODO `POST /device/unlink`
 Desvincula um device de um terminal
 
-| Parametros | Descrição | Informação do Client | Obrigatório |
-|---|---|---|---|
-|type|Os tipos são: WEB, MOBILE|:white_check_mark:|:white_check_mark:
-|UUID|Chave única do device|:white_check_mark:|:white_check_mark:
-|deviceID|MOBILE usa deviceID e WEB usa user-agent|:white_check_mark:|:white_check_mark:
-|document|Documento do usuário (CPF), o client enviará o JWT na requisição| |:white_check_mark:
-
 #### `POST /transaction`
 Cria uma nova Transação e retorna um `transactionId`
 

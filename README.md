@@ -1,5 +1,5 @@
 # Token
-Serviço de token para o banco topázio feito em Node as seguintes bibliotecas:
+Serviço de token feito em Node as seguintes bibliotecas:
 * Express JS
 * Socket.io
 * RabbitMQ
